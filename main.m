@@ -169,14 +169,17 @@ for t = 1:NoPeriods
     targetRet = mean(mu);
     
     % optimize each portfolios to get the weights 'x'
+    T = 100;
+    NoEpisodes = 100;
+    
+    % optimize each portfolios to get the weights 'x'
     x{1}(:,t) = funList{1}(mu, Q, targetRet);
     x{2}(:,t) = funList{2}(mu, Q, lambda, alpha);
     x{3}(:,t) = funList{3}(mu, Q, targetRet, T, NoEpisodes);
     x{4}(:,t) = funList{4}(mu, Q, targetRet, card);
     x{5}(:,t) = funList{5}(mu, Q, currentPrices, 0.95);
     
-    % calculate the optimal number of shares of each stock you should hold
-    for i = 1:NoMethods
+    for i=1:NoMethods
         % number of shares your portfolio holds per stock
         NoShares{i} = x{i}(:,t) .* currentVal(t,i) ./ currentPrices;
         
@@ -189,8 +192,26 @@ for t = 1:NoPeriods
         end
         
         NoSharesOld{i} = NoShares{i};
+
+
+        %--------------------- Performance Metrics ----------------------------
+        % Ex Ante Sharpe Ratio
+        % Expected return of the portfolio based on current weights
+        mu_portfolio{i}(t,:) = mu'*x{i}(:,t);
+        % Variance of the portfolio based on current weights
+        portfolio_var{i}(t,:) = x{i}(:,t)'*Q*x{i}(:,t);
+        sharpe_ratio_ante{i}(t,:) = (mu_portfolio{i}(t,:))/sqrt(portfolio_var{i}(t,:));
+         
+        % Coefficient of Variance
+        coefficientOfVariance{i}(t,:) = portfolio_var{i}(t,:)/mu_portfolio{i}(t,:);
+        
+        % Ex Post Sharpe Ratio
+        if t ~= 1
+            sharpe_ratio_post{i}(t-1,:) = mu_portfolio_post*x{i}(:,t-1)/sqrt(portfolio_var{i}(t-1,:));%(avgReturnsPeriod(t-1,i))/sqrt(portfolio_var{i}(t-1,:));
+        end
+        mu_portfolio_post = geomean(periodReturns+1)-1       
     end
-    
+
     
     % Complete our per period analysis calculations
     periodEndVal(t,:) = portfValue(toDay,:);
