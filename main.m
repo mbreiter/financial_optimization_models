@@ -180,13 +180,19 @@ for t = 1:NoPeriods
     x{5}(:,t) = funList{5}(mu, Q, currentPrices, 0.95);
     
     for i=1:NoMethods
-        if i ~= 3
-            expectedReturns(t, i) = mu' * x{i}(:,t);
-        else
-            expectedReturns(t, i) = mu_view' * x{i}(:,t);
+        % number of shares your portfolio holds per stock
+        NoShares{i} = x{i}(:,t) .* currentVal(t,i) ./ currentPrices;
+        
+        % weekly portfolio value during the out-of-sample window
+        portfValue(fromDay:toDay,i) = periodPrices * NoShares{i};
+        
+        % Calculate your transaction costs for the current rebalance period
+        if t ~= 1
+            tCost(t-1, i) = 0.005*currentPrices'*abs(NoSharesOld{i} - NoShares{i});        
         end
         
-        expectedVar(t, i) = x{i}(:,t)'*Q*x{i}(:,t);  
+        NoSharesOld{i} = NoShares{i};
+
 
         %--------------------- Performance Metrics ----------------------------
         % Ex Ante Sharpe Ratio
