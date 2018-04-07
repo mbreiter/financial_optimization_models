@@ -1,4 +1,4 @@
-function [ robust_optimal ] = robust_mvo(mu, Q, lambda, alpha)
+function [ output_args ] = robust_mvo(mu, Q, lambda, alpha)
 
     % the number of assets
     N = size(mu,1);
@@ -11,9 +11,11 @@ function [ robust_optimal ] = robust_mvo(mu, Q, lambda, alpha)
     Theta = diag(diag(Q)) / N;
     
     % estimate our scaling term from a chi-squared distribution
-    epsilon = sqrt(chi2inv(alpha,N));
+    epsilon = sqrt(chi2inv(alpha,n));
+
     
     clear model
+    
     % define our objective functon value and the sense of our optimization
     model.obj = [-mu' epsilon];
     model.Q = sparse(lambda*Q_r);
@@ -32,6 +34,6 @@ function [ robust_optimal ] = robust_mvo(mu, Q, lambda, alpha)
     model.quadcon(1).sense = '=';
 
     result = gurobi(model);
-    robust_optimal = result.x(1:N);
+    robust_optimal = result.x
 end
 
