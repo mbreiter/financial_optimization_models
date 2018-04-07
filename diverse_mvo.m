@@ -52,6 +52,18 @@ function x_optimal = diverse_mvo(mu, Q, targetRet, card)
   end
   
   % Get the optimal portfolio from the MVO function
-  x_optimal = MVO(portfolio_mu, portfolio_Q, targetRet);
+  diverse_x_optimal = MVO(portfolio_mu, portfolio_Q, targetRet);
+  
+  x_optimal = [];
+  k = 1;
+  
+  for i = 1:n
+      if assets_in_portfolio(i) == 1
+          x_optimal = cat(1,x_optimal,diverse_x_optimal(k));
+          k = k + 1;
+      else
+          x_optimal = cat(1,x_optimal,0);
+      end
+  end
 
 end
