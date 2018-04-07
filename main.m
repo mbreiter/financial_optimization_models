@@ -179,8 +179,6 @@ for t = 1:NoPeriods
     x{4}(:,t) = funList{4}(mu, Q, targetRet, card);
     x{5}(:,t) = funList{5}(mu, Q, currentPrices, 0.95);
     
-
-
     for i=1:NoMethods
         if i ~= 3
             expectedReturns(t, i) = mu' * x{i}(:,t);
@@ -207,8 +205,7 @@ for t = 1:NoPeriods
         end
         mu_portfolio_post = geomean(periodReturns+1)-1       
     end
-=======
->>>>>>> 5f85aacfba09fe66e9f28474d876d2aea1fe55ee
+
     
     % Complete our per period analysis calculations
     periodEndVal(t,:) = portfValue(toDay,:);
