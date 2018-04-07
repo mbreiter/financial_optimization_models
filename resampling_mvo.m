@@ -12,6 +12,7 @@ function [weights_avg] = resampling_mvo(mu, Q, targetRet, T, NoEpisodes)
 %
 %	outputs:weights_avg - arithmetic mean of all weights generated from resampling.
 
+
 for i = 1:NoEpisodes
     ret_gen{i}(:,:) = mvnrnd(mu, Q, T);
     mu_gen{i}(:,:) = geomean(ret_gen{i}+1)-1;
@@ -23,4 +24,3 @@ end
 weights_avg = mean(weights_gen, 2);
 
 end
-

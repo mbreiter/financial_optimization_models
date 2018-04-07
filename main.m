@@ -19,7 +19,7 @@ clear all
 format long
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% 1. read input files (MATLAB 2015)
+%% 1. read input files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % load the stock weekly prices and factors weekly returns
@@ -67,7 +67,7 @@ testEnd   = testStart + calmonths(6) - days(1);
 NoPeriods = 6;
 
 % investment strategies
-funNames  = {'mvo' 'robust mvo' 'resampling mvo' 'most-diverse mvo' 'CVaR'};
+funNames  = {'mvo' 'robust mvo' 'resampling mvo' 'most-diverse mvo' 'cvar'};
 NoMethods = length(funNames);
 
 funList = {'mvo' 'robust_mvo' 'resampling_mvo' 'diverse_mvo' 'cvar'};
@@ -122,7 +122,7 @@ for t = 1:NoPeriods
     
     % set the initial value of the portfolio or update the portfolio value
     if t == 1
-        currentVal(t,:) = initialVal*ones(1,3);
+        currentVal(t,:) = initialVal*ones(1,NoMethods);
     else
         for i = 1 : NoMethods   
             currentVal(t,i) = currentPrices' * NoShares{i};      
