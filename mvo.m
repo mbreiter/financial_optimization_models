@@ -1,4 +1,4 @@
-function  x_optimal = MVO(mu, Q, targetRet)
+function  x_optimal = mvo(mu, Q, targetRet)
 
     % Find the total number of assets
     n = size(Q,1);

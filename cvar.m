@@ -1,4 +1,4 @@
-function [x_optimal, CVaR] = cvar(prices, mu, Q, beta)
+function [x_optimal, CVaR] = cvar(mu, Q, prices, beta)
     
     % we need the correlation matrix to simulate the correlated prices of 
     % portfolio

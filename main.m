@@ -54,7 +54,18 @@ mktNoShares = [36.40 9.86 15.05 10.91 45.44 15.43 43.45 33.26 51.57 45.25 ...
 
 % initial budget to invest
 initialVal = 100;
+
+% robust mvo parameters 
+lambda = 50;
+alpha = 0.9;
            
+% parameters for resampling mvo
+T = 100;
+NoEpisodes = 100;
+
+% parameters for most-diverse mvo
+card = 12;
+    
 % start of in-sample calibration period 
 calStart = datetime('2012-01-01');
 calEnd   = calStart + calmonths(12) - days(1);
@@ -158,15 +169,12 @@ for t = 1:NoPeriods
     targetRet = mean(mu);
     
     % optimize each portfolios to get the weights 'x'
-    T = 100;
-    NoEpisodes = 100;
-    
-    % optimize each portfolios to get the weights 'x'
     x{1}(:,t) = funList{1}(mu, Q, targetRet);
-    x{2}(:,t) = funList{2}(mu, Q, targetRet);
+    x{2}(:,t) = funList{2}(mu, Q, lambda, alpha);
     x{3}(:,t) = funList{3}(mu, Q, targetRet, T, NoEpisodes);
+    x{4}(:,t) = funList{4}(mu, Q, targetRet, card);
+    x{5}(:,t) = funList{5}(mu, Q, currentPrices, 0.95);
     
-   
     % calculate the optimal number of shares of each stock you should hold
     for i = 1:NoMethods
         % number of shares your portfolio holds per stock
@@ -183,15 +191,6 @@ for t = 1:NoPeriods
         NoSharesOld{i} = NoShares{i};
     end
     
-    for i=1:NoMethods
-        if i ~= 3
-            expectedReturns(t, i) = mu' * x{i}(:,t);
-        else
-            expectedReturns(t, i) = mu_view' * x{i}(:,t);
-        end
-        
-        expectedVar(t, i) = x{i}(:,t)'*Q*x{i}(:,t);            
-    end
     
     % Complete our per period analysis calculations
     periodEndVal(t,:) = portfValue(toDay,:);
@@ -225,21 +224,6 @@ avgReturnsInitial;
 % investing period. Tracks the return an investor can expect by investing
 % at each period. 
 avgReturnsPeriod;
-
-% calculate the value at risk after each period, based on the value of the
-% end porfolio at the end of each period, the average portfolio returns
-% over each period and the risk of each period. consider loss probability
-% levels of 1%, 5% and 10%.
-lossTolerance = [0.01, 0.05, 0.1];
-
-% here I calculate the VaR of my portfolio. this requires a MATLAB fiancial
-% package which is not by default installed on the ecf MATLAB versions. It
-% came by default on my copy however. 
-% for i=1:NoMethods
-%     for j=1:NoPeriods
-%         vatrisk{i}(j,:) = portvrisk(avgReturnsPeriod(j,i), portRiskPeriod(j,i), lossTolerance, periodEndVal(j,i));
-%     end
-% end
 
 % maximum value of each portfolio and the realization date
 [maxVal, when_max] = max(portfValue);
@@ -307,11 +291,12 @@ testEnd = testStart + 6*calmonths(6) - days(1);
 plotDates = dates(testStart <= dates);
 
 fig1 = figure(1);
-plot(plotDates, portfValue(:,1))
-hold on
-plot(plotDates, portfValue(:,2))
-hold on
-plot(plotDates, portfValue(:,3))
+
+for i=1:NoMethods
+    plot(plotDates, portfValue(:,i))
+    hold on
+end
+
 legend(funNames, 'Location', 'eastoutside','FontSize',12);
 datetick('x','dd-mmm-yyyy','keepticks','keeplimits');
 set(gca,'XTickLabelRotation',30);
@@ -330,58 +315,41 @@ print(fig1,'portfolio-values','-dpng','-r0');
 % 4.2 Plot the portfolio weights 
 %--------------------------------------------------------------------------
 
-% MVO Plot
-fig2 = figure(2);
-area(x{1}')
-legend(tickers, 'Location', 'eastoutside','FontSize',12);
-title('MVO Portfolio Weights', 'FontSize', 14)
-ylabel('Weights','interpreter','latex','FontSize',12);
-xlabel('Rebalance Period','interpreter','latex','FontSize',12);
+for i=1:NoMethods
+    fig = figure(i+1);
+    area(x{i}')
+    
+    if i==1
+        name = 'MVO Portfolio Weights';
+        file = 'mvo-plot';
+    elseif i==2
+        name = 'Robust MVO Portfolio Weights';
+        file = 'robust-mvo-plot';
+    elseif i==3
+        name = 'Resampling MVO Portfolio Weights';
+        file = 'resampling-mvo-plot';
+    elseif i==4
+        name = 'Most-Diverse MVO Portfolio Weights';
+        file = 'diverse-mvo-plot';
+    else
+        name = 'CVaR Optimization Portfolio Weights';
+        file = 'cvar-plot';
+    end
+    
+    title(name, 'FontSize', 14)
+    
+    legend(tickers, 'Location', 'eastoutside','FontSize',12);
+    ylabel('Weights','interpreter','latex','FontSize',12);
+    xlabel('Rebalance Period','interpreter','latex','FontSize',12);
 
-% Define the plot size in inches
-set(fig2,'Units','Inches', 'Position', [0 0 8, 5]);
-pos1 = get(fig2,'Position');
-set(fig2,'PaperPositionMode','Auto','PaperUnits','Inches',...
-    'PaperSize',[pos1(3), pos1(4)]);
+    % Define the plot size in inches
+    set(fig,'Units','Inches', 'Position', [0 0 8, 5]);
+    pos = get(fig,'Position');
+    set(fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
+        'PaperSize',[pos(3), pos(4)]);
 
-% If you want to save the figure as .png for use in MS Word
-print(fig2,'mvo-plot','-dpng','-r0');
-
-% MVO with Cardinality Constraints Plot
-fig3 = figure(3);
-area(x{2}')
-legend(tickers, 'Location', 'eastoutside','FontSize',12);
-title('MVO-Cardinality Portfolio Weights', 'FontSize', 14)
-ylabel('Weights','interpreter','latex','FontSize',12);
-xlabel('Rebalance Period','interpreter','latex','FontSize',12);
-
-% Define the plot size in inches
-set(fig3,'Units','Inches', 'Position', [0 0 8, 5]);
-pos1 = get(fig3,'Position');
-set(fig3,'PaperPositionMode','Auto','PaperUnits','Inches',...
-    'PaperSize',[pos1(3), pos1(4)]);
-
-% If you want to save the figure as .pdf for use in LaTeX
-% print(fig3,'fileName3','-dpdf','-r0');
-
-% If you want to save the figure as .png for use in MS Word
-print(fig3,'mvocard-plot','-dpng','-r0');
-
-% B-L Model Plot
-fig4 = figure(4);
-area(x{3}')
-legend(tickers, 'Location', 'eastoutside','FontSize',12);
-title('BL Portfolio Weights', 'FontSize', 14)
-ylabel('Weights','interpreter','latex','FontSize',12);
-xlabel('Rebalance Period','interpreter','latex','FontSize',12);
-
-% Define the plot size in inches
-set(fig4,'Units','Inches', 'Position', [0 0 8, 5]);
-pos1 = get(fig4,'Position');
-set(fig4,'PaperPositionMode','Auto','PaperUnits','Inches',...
-    'PaperSize',[pos1(3), pos1(4)]);
-
-% If you want to save the figure as .png for use in MS Word
-print(fig4,'bl-plot','-dpng','-r0');
+    % saving the figure as a png
+    print(fig,file,'-dpng','-r0');
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
