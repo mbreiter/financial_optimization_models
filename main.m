@@ -190,7 +190,23 @@ for t = 1:NoPeriods
             expectedReturns(t, i) = mu_view' * x{i}(:,t);
         end
         
-        expectedVar(t, i) = x{i}(:,t)'*Q*x{i}(:,t);            
+        expectedVar(t, i) = x{i}(:,t)'*Q*x{i}(:,t);  
+
+        %--------------------- Performance Metrics ----------------------------
+        % Ex Ante Sharpe Ratio
+        % Expected return of the portfolio based on current weights
+        mu_portfolio{i}(t,:) = mu'*x{i}(:,t);
+        % Variance of the portfolio based on current weights
+        portfolio_var{i}(t,:) = x{i}(:,t)'*Q*x{i}(:,t);
+        sharpe_ratio_ante{i}(t,:) = (mu_portfolio{i}(t,:))/sqrt(portfolio_var{i}(t,:));
+         
+        % Coefficient of Variance
+        coefficientOfVariance{i}(t,:) = portfolio_var{i}(t,:)/mu_portfolio{i}(t,:);
+        
+        % Ex Post Sharpe Ratio
+        if t ~= 1
+            sharpe_ratio_post{i}(t-1,:) = (avgReturnsPeriod(t-1,i))/sqrt(portfolio_var{i}(t-1,:));
+        end          
     end
     
     % Complete our per period analysis calculations
