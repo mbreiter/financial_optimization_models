@@ -20,13 +20,7 @@ function x_optimal = diverse_mvo(mu, Q, targetRet, card)
 
   one_rep_constraint = cat(2, blkdiag(Ac{:}), zeros(n));
 
-  % Setting up the reps-must-be-in-portfolio constraint
-  A = -1 * ones(n,1);
-  N = n; 
-  Ar = repmat(A, 1, N);
-  Ac = mat2cell(Ar, size(A,1), repmat(size(A,2),1,N));
-
-  reps_in_portfolio_constraint = cat(2, eye(power(n,2)), blkdiag(Ac{:}));
+  reps_in_portfolio_constraint = cat(2, eye(power(n,2)), repmat(-1 * eye(n), n, 1));
 
   model.A = sparse(cat(1, size_constraint, one_rep_constraint, reps_in_portfolio_constraint));
   model.sense = cat(1, repmat('=', n+1, 1), repmat('<', power(n,2), 1));
@@ -38,7 +32,7 @@ function x_optimal = diverse_mvo(mu, Q, targetRet, card)
   result = gurobi(model, params);
 
   result_x = result.x;
-  assets_in_portfolio = result_x(power(n,2) + 1, power(n,2) + n);
+  assets_in_portfolio = result_x(power(n,2) + 1:power(n,2) + n);
 
   % Creating the returns and covariances of the assets that will be in the portfolio
   portfolio_Q = [];
@@ -61,4 +55,3 @@ function x_optimal = diverse_mvo(mu, Q, targetRet, card)
   x_optimal = MVO(portfolio_mu, portfolio_Q, targetRet);
 
 end
-
