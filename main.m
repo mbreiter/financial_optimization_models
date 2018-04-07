@@ -158,7 +158,14 @@ for t = 1:NoPeriods
     targetRet = mean(mu);
     
     % optimize each portfolios to get the weights 'x'
+    T = 100;
+    NoEpisodes = 100;
+    
+    % optimize each portfolios to get the weights 'x'
     x{1}(:,t) = funList{1}(mu, Q, targetRet);
+    x{2}(:,t) = funList{2}(mu, Q, targetRet);
+    x{3}(:,t) = funList{3}(mu, Q, targetRet, T, NoEpisodes);
+    
    
     % calculate the optimal number of shares of each stock you should hold
     for i = 1:NoMethods
