@@ -30,6 +30,8 @@ function [ robust_optimal ] = robust_mvo(mu, Q, lambda, alpha)
     model.quadcon(1).q = zeros(N+1,1);
     model.quadcon(1).rhs = 0;
     model.quadcon(1).sense = '=';
+    
+    model.lb = [-100000*ones(N,1); 1];
 
     result = gurobi(model);
     robust_optimal = result.x(1:N);
