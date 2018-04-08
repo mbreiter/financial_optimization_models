@@ -372,5 +372,4 @@ for i=1:NoMethods
     % saving the figure as a png
     print(fig,file,'-dpng','-r0');
 end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,4 +1,4 @@
-function [ robust_optimal ] = robust_mvo(mu, Q, lambda, alpha)
+function robust_optimal = robust_mvo(mu, Q, lambda, alpha)
 
     % the number of assets
     N = size(mu,1);
@@ -31,7 +31,8 @@ function [ robust_optimal ] = robust_mvo(mu, Q, lambda, alpha)
     model.quadcon(1).rhs = 0;
     model.quadcon(1).sense = '=';
     
-    model.lb = [-100000*ones(N,1); 1];
+    % we permit short-selling on our holding assets
+    model.lb = [-100000*ones(N,1); 0];
 
     result = gurobi(model);
     robust_optimal = result.x(1:N);
