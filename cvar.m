@@ -26,7 +26,7 @@ function [x_optimal, CVaR] = cvar(mu, Q, prices, beta)
         epsilon = L * normrnd(0,1,[N,1]);
         
         % calculate our simulated prices
-        sim_price(:,i) = prices .* exp((mu - 0.5 * diag(Q))*dt + sqrt(dt)* diag(Q) .* epsilon);  
+        sim_price(:,i) = prices .* exp((mu - 0.5 * diag(Q))*dt + sqrt(dt)* sqrt(diag(Q)) .* epsilon);  
         
         % calculate our simulated returns
         sim_returns(:,i) = (sim_price(:,i) - prices) ./ prices;
