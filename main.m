@@ -177,7 +177,7 @@ for t = 1:NoPeriods
     x{2}(:,t) = funList{2}(mu, Q, lambda, alpha);
     x{3}(:,t) = funList{3}(mu, Q, targetRet, T, NoEpisodes);
     x{4}(:,t) = funList{4}(mu, Q, targetRet, card);
-    x{5}(:,t) = funList{5}(mu, Q, currentPrices, 0.95);
+    [x{5}(:,t), VaR(t)] = funList{5}(mu, Q, currentPrices, 0.95);
     
     for i=1:NoMethods
         % number of shares your portfolio holds per stock
