@@ -1,4 +1,4 @@
-function [x_optimal, VaR] = cvar(mu, Q, prices, beta)
+function [x_optimal, CVaR] = cvar(mu, Q, prices, beta)
     
     % we need the correlation matrix to simulate the correlated prices of 
     % portfolio
@@ -32,14 +32,13 @@ function [x_optimal, VaR] = cvar(mu, Q, prices, beta)
         sim_returns(:,i) = (sim_price(:,i) - prices) ./ prices;
     end
     
-      % uncomment if you want to create a mesh plot for your simulated asset prices  
-%     X = 1:N;
-%     Y = 1:S;
-%     mesh(sim_price);
-%     title('Simulated Prices of Holding Assets', 'FontSize', 14)
-%     ylabel('Asset','interpreter','latex','FontSize',12);
-%     xlabel('Scenario','interpreter','latex','FontSize',12);
-%     zlabel('Asset Price','interpreter','latex','FontSize',12);
+    X = 1:N;
+    Y = 1:S;
+    mesh(sim_price);
+    title('Simulated Prices of Holding Assets  ', 'FontSize', 14)
+    ylabel('Asset','interpreter','latex','FontSize',12);
+    xlabel('Scenario','interpreter','latex','FontSize',12);
+    zlabel('Asset Price','interpreter','latex','FontSize',12);
              
     % we formulate our linear objective function
     % NOTE: ordering of decision variables: gamma, x_1 ... x_N, z_1 ... z_S
@@ -65,7 +64,7 @@ function [x_optimal, VaR] = cvar(mu, Q, prices, beta)
     % optimal solution to the linear-program minimizing CVaR
     optimal = linprog(f, A, b, Aeq, beq, lb, ub);
     
-    VaR = optimal(1);
+    CVaR = optimal(1);
     x_optimal = optimal(2:N+1); 
 end
 
