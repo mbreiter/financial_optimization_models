@@ -372,4 +372,50 @@ for i=1:NoMethods
     % saving the figure as a png
     print(fig,file,'-dpng','-r0');
 end
+
+%--------------------------------------------------------------------------
+% 4.2 Plot the Sharpe Ratios 
+%--------------------------------------------------------------------------
+
+ante_periods = 1:1:6;
+ante_fig = figure('Name', 'Ex-Ante Sharpe Ratio');
+
+for i=1:NoMethods
+    plot(ante_periods, sharpe_ratio_ante{i})
+    hold on
+end
+
+legend(funNames, 'Location', 'eastoutside','FontSize',12);
+title('Ex-Ante Sharpe Ratio', 'FontSize', 14)
+ylabel('Value','interpreter','latex','FontSize',12);
+xlabel('Investment Period','interpreter','latex','FontSize',12);
+
+% Define the plot size in inches
+set(ante_fig,'Units','Inches', 'Position', [0 0 8, 5]);
+pos1 = get(ante_fig,'Position');
+set(ante_fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
+    'PaperSize',[pos1(3), pos1(4)]);
+
+print(ante_fig,'ex-ante-share-ratio','-dpng','-r0');
+
+post_periods = 1:1:5;
+post_fig = figure('Name', 'Ex-Post Sharpe Ratio');
+
+for i=1:NoMethods
+    plot(post_periods, sharpe_ratio_post{i})
+    hold on
+end
+
+legend(funNames, 'Location', 'eastoutside','FontSize',12);
+title('Ex-Post Sharpe Ratio', 'FontSize', 14)
+ylabel('Value','interpreter','latex','FontSize',12);
+xlabel('Investment Period','interpreter','latex','FontSize',12);
+
+% Define the plot size in inches
+set(post_fig,'Units','Inches', 'Position', [0 0 8, 5]);
+pos1 = get(post_fig,'Position');
+set(post_fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
+    'PaperSize',[pos1(3), pos1(4)]);
+
+print(post_fig,'ex-post-share-ratio','-dpng','-r0');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
