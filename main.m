@@ -404,7 +404,7 @@ pos1 = get(ante_fig,'Position');
 set(ante_fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
     'PaperSize',[pos1(3), pos1(4)]);
 
-print(ante_fig,'ex-ante-share-ratio','-dpng','-r0');
+print(ante_fig,'ex-ante-sharpe-ratio','-dpng','-r0');
 
 post_fig = figure('Name', 'Ex-Post Sharpe Ratio');
 
@@ -424,5 +424,5 @@ pos1 = get(post_fig,'Position');
 set(post_fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
     'PaperSize',[pos1(3), pos1(4)]);
 
-print(post_fig,'ex-post-share-ratio','-dpng','-r0');
+print(post_fig,'ex-post-sharpe-ratio','-dpng','-r0');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
