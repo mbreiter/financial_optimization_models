@@ -60,14 +60,11 @@ lambda = 50;
 alpha = 0.9;
            
 % parameters for resampling mvo
-T = 100;
-NoEpisodes = 100;
+T = [100, 100, 100, 100];
+NoEpisodes = [20, 40, 60, 80, 100, 500];
 
 % parameters for most-diverse mvo
 card = 12;
-
-% confidence level for var and cvar
-confidence = 0.95;
     
 % start of in-sample calibration period 
 calStart = datetime('2012-01-01');
@@ -82,7 +79,7 @@ NoPeriods = 6;
 
 % investment strategies
 funNames  = {'mvo' 'robust mvo' 'resampling mvo' 'most-diverse mvo' 'cvar'};
-NoMethods = length(funNames);
+NoMethods = size(T,2)*size(NoEpisodes,2);%length(funNames);
 
 funList = {'mvo' 'robust_mvo' 'resampling_mvo' 'diverse_mvo' 'cvar'};
 funList = cellfun(@str2func, funList, 'UniformOutput', false);
@@ -172,26 +169,11 @@ for t = 1:NoPeriods
     targetRet = mean(mu);
     
     % optimize each portfolios to get the weights 'x'
-    T = 100;
-    NoEpisodes = 100;
-    
-    % firstly, lets run our monte carlo simulation to predict the returns
-    % of our assets over our next investment period. 
-    % the number of monte carlo simulations that we will run
-    S = 2000;
-    
-     % we have weekly estimates for returns and we wish to simulate the
-    % price path after six months using a single time-step
-    dt = 26;
-    
-    [sim_returns, sim_prices] = monte_carlo(mu, Q, currentPrices, S, dt);
-    
-    % optimize each portfolios to get the weights 'x'
-    x{1}(:,t) = funList{1}(mu, Q, targetRet);
-    x{2}(:,t) = funList{2}(mu, Q, lambda, alpha);
-    x{3}(:,t) = funList{3}(mu, Q, targetRet, T, NoEpisodes);
-    x{4}(:,t) = funList{4}(mu, Q, targetRet, card);
-    [x{5}(:,t), optimal_VaR(t), optimal_CVaR(t)] = funList{5}(currentPrices, S, confidence, sim_returns, sim_prices);
+    for i = 1:size(NoEpisodes,2)
+        for j = 1:size(T,2)
+            x{(i-1)*(size(NoEpisodes,2))+j}(:,t) = funList{3}(mu, Q, targetRet, T(j), NoEpisodes(i));
+        end
+    end
     
     for i=1:NoMethods
         % number of shares your portfolio holds per stock
@@ -207,56 +189,34 @@ for t = 1:NoPeriods
         
         NoSharesOld{i} = NoShares{i};
 
-        % ex-ante Sharpe ratio
-        % expected return of the portfolio based on current weights
+
+        %--------------------- Performance Metrics ----------------------------
+        % Ex Ante Sharpe Ratio
+        % Expected return of the portfolio based on current weights
         mu_portfolio{i}(t,:) = mu'*x{i}(:,t);
-        
-        % variance of the portfolio based on current weights
+        % Variance of the portfolio based on current weights
         portfolio_var{i}(t,:) = x{i}(:,t)'*Q*x{i}(:,t);
         sharpe_ratio_ante{i}(t,:) = (mu_portfolio{i}(t,:))/sqrt(portfolio_var{i}(t,:));
          
-        % coefficient of variance
+        % Coefficient of Variance
         coefficientOfVariance{i}(t,:) = portfolio_var{i}(t,:)/mu_portfolio{i}(t,:);
         
-        % ex-post Sharpe ratio
+        % Ex Post Sharpe Ratio
         if t ~= 1
-            sharpe_ratio_post{i}(t-1,:) = (mu_portfolio_post*x{i}(:,t-1))/std_dev_post;
+            sharpe_ratio_post{i}(t-1,:) = mu_portfolio_post*x{i}(:,t-1)/sqrt(portfolio_var{i}(t-1,:));%(avgReturnsPeriod(t-1,i))/sqrt(portfolio_var{i}(t-1,:));
         end
-<<<<<<< HEAD
-        mu_portfolio_post = geomean(periodReturns+1)-1 
-        
-        % approximate var for each portfolio other than with cvar
-        % optimization (since we already have that results)
-        if i ~= 5
-            % we take our loss function as what would be the reazlied gain
-            % or loss under each scenario we generate
-            loss_function{i}(t,:) = -sim_returns' * x{i}(:,t);
-            
-            % find VaR for the portfolio given our monte carlo simulated results
-            VaR{i}(t,:) = prctile(loss_function{i}(t,:), 100*confidence);
-            
-            CVaR{i}(t,:) = VaR{i}(t,:) + 1/((1-confidence)*S)*sum( max(loss_function{i}(t,:) - VaR{i}(t,:), 0));       
-        else 
-            % we calculate var and cvar from our cvar optimization 
-            VaR{i}(t,:) = optimal_VaR(t);
-            CVaR{i}(t,:) = optimal_CVaR(t); 
-        end  
-=======
-        mu_portfolio_post = geomean(periodReturns+1)-1;
-        covariance_post = cov(periodReturns);
-        std_dev_post = sqrt(x{i}(:,t)' * covariance_post * x{i}(:,t));
-        
->>>>>>> e3173f3df6c72cfe6e8b60d696c8e7cc306490e7
+        mu_portfolio_post = geomean(periodReturns+1)-1;       
     end
 
     
-    % complete our per period analysis calculations
+    % Complete our per period analysis calculations
     periodEndVal(t,:) = portfValue(toDay,:);
     initial_returns = (portfValue(fromDay:toDay,:) - initialVal) / initialVal;
     period_returns = ( portfValue(fromDay:toDay,:) - repmat(currentVal(t,:), size(portfValue(fromDay:toDay,:),1), 1) ) ./ repmat(currentVal(t,:), size(portfValue(fromDay:toDay,:),1), 1);
     
     avgReturnsInitial(t,:) = geomean(initial_returns + 1) - 1;
     avgReturnsPeriod(t,:) = geomean(period_returns + 1) - 1;
+    portRiskPeriod(t,:) = std(period_returns);
     
     % update calibration and out-of-sample test periods
     calStart = calStart + calmonths(6);
@@ -266,85 +226,16 @@ for t = 1:NoPeriods
     testEnd = testStart + calmonths(6) - days(1);
 end
 
-for i = 1:NoMethods
-    sharpe_ratio_post{i}(NoPeriods,:) = (mu_portfolio_post*x{i}(:,NoPeriods))/std_dev_post;
-end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 4. Results
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% my avgReturnsInitial metric provides an average return of the value of the 
-% portfolio at the end of each rebalancing period based on the initial value 
-% as a benchmark. Used to track what kind of return an investor who invested 
-% at the beginning would realize at the end. Note that I calculate this above
-avgReturnsInitial;
 
-% my avgReturnsPeriod metric is similar to avgReturnsInitial, but tracks 
-% performance based on the value of the portfolio at the beginning of each
-% investing period. Tracks the return an investor can expect by investing
-% at each period. 
-avgReturnsPeriod;
+save('resample_MVO_alt.m', 'sharpe_ratio_ante', 'sharpe_ratio_post', 'coefficientOfVariance', 'portfolio_var', 'x', '-v7.3')
 
-% maximum value of each portfolio and the realization date
-[maxVal, when_max] = max(portfValue);
-clear max
-
-% minimum value of each portfolio and the realization date
-[minVal, when_min] = min(portfValue);
-clear min
-
-% calculate weekly differences and find the largest week to week gain, and
-% the smallest week to week gain.
-difference = portfValue(2:end,:) - portfValue(1:end-1,:);
-
-lwg = zeros(2, NoMethods);
-lwl = zeros(2, NoMethods);
-
-for i=1:NoMethods
-    [lwg(1,i),lwg(2,i)] = max(difference(:,i));
-    [lwl(1,i),lwl(2,i)] = min(difference(:,i));
-    
-    clear max min
-end
-
-% calculate the longest winning and losing streak
-streak = zeros(4, NoMethods);
-counter = zeros(2,1);
-
-for i=1:NoMethods
-    for j=1:size(difference,1)
-        if difference(j,i) < 0
-            % gain streak is over, so update our gain streak
-            if streak(1,i) < counter(1)
-                streak(1,i) = counter(1);
-                streak(2,i) = j;
-            end
-            
-            counter(1) = 0;
-            
-            % increment up our loss streak
-            counter(2) = counter(2) + 1;
-        elseif difference(j,i) > 0
-            % loss streak is over, so update our loss streak
-            if streak(3,i) < counter(2)
-                streak(3,i) = counter(2);
-                streak(4,i) = j;
-
-            end
-            counter(2) = 0;
-            
-            % increment up our gain streak
-            counter(1) = counter(1) + 1;
-        end
-    end
-    
-    counter = zeros(2,1);
-end
-
-%--------------------------------------------------------------------------
-% 4.1 Plot the portfolio values 
-%--------------------------------------------------------------------------
+% %--------------------------------------------------------------------------
+% % 4.1 Plot the portfolio values 
+% %--------------------------------------------------------------------------
 
 testStart = datetime('2013-01-01');
 testEnd = testStart + 6*calmonths(6) - days(1);
@@ -352,17 +243,31 @@ testEnd = testStart + 6*calmonths(6) - days(1);
 plotDates = dates(testStart <= dates);
 
 fig1 = figure(1);
+% T = [50, 100, 500, 1000];
+% NoEpisodes = [100, 100, 100, 100, 100];
+% label = {'T=50','T=50','T=50','T=50','T=50','T=100','T=100','T=100','T=100','T=100','T=500','T=500','T=500','T=500','T=500','T=1000','T=1000','T=1000','T=1000','T=1000'};
+% label = {'T=50','T=50','T=50','T=100','T=100','T=100','T=500','T=500','T=500','T=1000','T=1000','T=1000'};
+label = {'Ep=20','Ep=20','Ep=20','Ep=20','Ep=40','Ep=40','Ep=40','Ep=40','Ep=60','Ep=60','Ep=60','Ep=60','Ep=80','Ep=80','Ep=80','Ep=80','Ep=100','Ep=100','Ep=100','Ep=100','Ep=500','Ep=500','Ep=500','Ep=500',}
+colors = [repmat(['r'], 1, 4),repmat(['g'], 1, 4),repmat(['y'], 1, 4),repmat(['b'], 1, 4),repmat(['m'], 1, 4),repmat(['b'], 1, 4)]
+% Baseline portfolio performance at T = 1000
+portfBaseline = mean(portfValue(:,(end-5):end), 2);
+no_of_plots = size(T,2)*size(NoEpisodes,2);
 
-for i=1:NoMethods
-    plot(plotDates, portfValue(:,i))
+for i=1:no_of_plots
+    % Find the Differences in PortfValues and baseline portfolio
+    portfValue_Diff(:,i) = portfValue(:,i)-portfBaseline;
+    
+    plot(plotDates, portfValue_Diff(:,i), colors(i))
+    
     hold on
 end
 
-legend(funNames, 'Location', 'eastoutside','FontSize',12);
+legend(label, 'Location', 'bestoutside','FontSize',12);
+
 datetick('x','dd-mmm-yyyy','keepticks','keeplimits');
 set(gca,'XTickLabelRotation',30);
-title('Portfolio Value', 'FontSize', 14)
-ylabel('Value','interpreter','latex','FontSize',12);
+title('Portfolio Value for Varying Episodes and T=100 Cycles', 'FontSize', 14)
+ylabel('Difference from Portfolio Baseline Value','interpreter','latex','FontSize',12);
 
 % Define the plot size in inches
 set(fig1,'Units','Inches', 'Position', [0 0 8, 5]);
@@ -370,96 +275,50 @@ pos1 = get(fig1,'Position');
 set(fig1,'PaperPositionMode','Auto','PaperUnits','Inches',...
     'PaperSize',[pos1(3), pos1(4)]);
 
-print(fig1,'portfolio-values','-dpng','-r0');
+print(fig1,'resampling_bahavior_difference_100_T','-dpng','-r0');
+save('portfValue_Diff_100_T.m', 'portfValue_Diff')
 
-%--------------------------------------------------------------------------
-% 4.2 Plot the portfolio weights 
-%--------------------------------------------------------------------------
+% %%
+% 
+% %--------------------------------------------------------------------------
+% % 4.2 Plot the portfolio weights 
+% %--------------------------------------------------------------------------
+% 
+% for i=1:NoMethods
+%     fig = figure(i+1);
+%     area(x{i}')
+%     
+%     if i==1
+%         name = 'MVO Portfolio Weights';
+%         file = 'mvo-plot';
+%     elseif i==2
+%         name = 'Robust MVO Portfolio Weights';
+%         file = 'robust-mvo-plot';
+%     elseif i==3
+%         name = 'Resampling MVO Portfolio Weights';
+%         file = 'resampling-mvo-plot';
+%     elseif i==4
+%         name = 'Most-Diverse MVO Portfolio Weights';
+%         file = 'diverse-mvo-plot';
+%     else
+%         name = 'CVaR Optimization Portfolio Weights';
+%         file = 'cvar-plot';
+%     end
+%     
+%     title(name, 'FontSize', 14)
+%     
+%     legend(tickers, 'Location', 'eastoutside','FontSize',12);
+%     ylabel('Weights','interpreter','latex','FontSize',12);
+%     xlabel('Rebalance Period','interpreter','latex','FontSize',12);
+% 
+%     % Define the plot size in inches
+%     set(fig,'Units','Inches', 'Position', [0 0 8, 5]);
+%     pos = get(fig,'Position');
+%     set(fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
+%         'PaperSize',[pos(3), pos(4)]);
+% 
+%     % saving the figure as a png
+%     print(fig,file,'-dpng','-r0');
+% end
 
-for i=1:NoMethods
-    fig = figure(i+1);
-    area(x{i}')
-    
-    if i==1
-        name = 'MVO Portfolio Weights';
-        file = 'mvo-plot';
-    elseif i==2
-        name = 'Robust MVO Portfolio Weights';
-        file = 'robust-mvo-plot';
-    elseif i==3
-        name = 'Resampling MVO Portfolio Weights';
-        file = 'resampling-mvo-plot';
-    elseif i==4
-        name = 'Most-Diverse MVO Portfolio Weights';
-        file = 'diverse-mvo-plot';
-    else
-        name = 'CVaR Optimization Portfolio Weights';
-        file = 'cvar-plot';
-    end
-    
-    title(name, 'FontSize', 14)
-    
-    legend(tickers, 'Location', 'eastoutside','FontSize',12);
-    ylabel('Weights','interpreter','latex','FontSize',12);
-    xlabel('Rebalance Period','interpreter','latex','FontSize',12);
-
-    % Define the plot size in inches
-    set(fig,'Units','Inches', 'Position', [0 0 8, 5]);
-    pos = get(fig,'Position');
-    set(fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
-        'PaperSize',[pos(3), pos(4)]);
-
-    % saving the figure as a png
-    print(fig,file,'-dpng','-r0');
-end
-
-<<<<<<< HEAD
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-=======
-
-%--------------------------------------------------------------------------
-% 4.2 Plot the Sharpe Ratios 
-%--------------------------------------------------------------------------
-
-periods = 1:1:6;
-ante_fig = figure('Name', 'Ex-Ante Sharpe Ratio');
-
-for i=1:NoMethods
-    plot(periods, sharpe_ratio_ante{i})
-    hold on
-end
-
-legend(funNames, 'Location', 'eastoutside','FontSize',12);
-title('Ex-Ante Sharpe Ratio', 'FontSize', 14)
-ylabel('Value','interpreter','latex','FontSize',12);
-xlabel('Investment Period','interpreter','latex','FontSize',12);
-
-% Define the plot size in inches
-set(ante_fig,'Units','Inches', 'Position', [0 0 8, 5]);
-pos1 = get(ante_fig,'Position');
-set(ante_fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
-    'PaperSize',[pos1(3), pos1(4)]);
-
-print(ante_fig,'ex-ante-sharpe-ratio','-dpng','-r0');
-
-post_fig = figure('Name', 'Ex-Post Sharpe Ratio');
-
-for i=1:NoMethods
-    plot(periods, sharpe_ratio_post{i})
-    hold on
-end
-
-legend(funNames, 'Location', 'eastoutside','FontSize',12);
-title('Ex-Post Sharpe Ratio', 'FontSize', 14)
-ylabel('Value','interpreter','latex','FontSize',12);
-xlabel('Investment Period','interpreter','latex','FontSize',12);
-
-% Define the plot size in inches
-set(post_fig,'Units','Inches', 'Position', [0 0 8, 5]);
-pos1 = get(post_fig,'Position');
-set(post_fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
-    'PaperSize',[pos1(3), pos1(4)]);
-
-print(post_fig,'ex-post-sharpe-ratio','-dpng','-r0');
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
->>>>>>> e3173f3df6c72cfe6e8b60d696c8e7cc306490e7
