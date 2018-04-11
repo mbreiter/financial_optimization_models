@@ -207,9 +207,12 @@ for t = 1:NoPeriods
         
         % Ex Post Sharpe Ratio
         if t ~= 1
-            sharpe_ratio_post{i}(t-1,:) = mu_portfolio_post*x{i}(:,t-1)/sqrt(portfolio_var{i}(t-1,:));%(avgReturnsPeriod(t-1,i))/sqrt(portfolio_var{i}(t-1,:));
+            sharpe_ratio_post{i}(t-1,:) = (mu_portfolio_post*x{i}(:,t-1))/std_dev_post;
         end
-        mu_portfolio_post = geomean(periodReturns+1)-1       
+        mu_portfolio_post = geomean(periodReturns+1)-1;
+        covariance_post = cov(periodReturns);
+        std_dev_post = sqrt(x{i}(:,t)' * covariance_post * x{i}(:,t));
+        
     end
 
     
@@ -228,6 +231,10 @@ for t = 1:NoPeriods
     
     testStart = testStart + calmonths(6);
     testEnd = testStart + calmonths(6) - days(1);
+end
+
+for i = 1:NoMethods
+    sharpe_ratio_post{i}(NoPeriods,:) = (mu_portfolio_post*x{i}(:,NoPeriods))/std_dev_post;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -372,4 +379,50 @@ for i=1:NoMethods
     % saving the figure as a png
     print(fig,file,'-dpng','-r0');
 end
+
+
+%--------------------------------------------------------------------------
+% 4.2 Plot the Sharpe Ratios 
+%--------------------------------------------------------------------------
+
+periods = 1:1:6;
+ante_fig = figure('Name', 'Ex-Ante Sharpe Ratio');
+
+for i=1:NoMethods
+    plot(periods, sharpe_ratio_ante{i})
+    hold on
+end
+
+legend(funNames, 'Location', 'eastoutside','FontSize',12);
+title('Ex-Ante Sharpe Ratio', 'FontSize', 14)
+ylabel('Value','interpreter','latex','FontSize',12);
+xlabel('Investment Period','interpreter','latex','FontSize',12);
+
+% Define the plot size in inches
+set(ante_fig,'Units','Inches', 'Position', [0 0 8, 5]);
+pos1 = get(ante_fig,'Position');
+set(ante_fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
+    'PaperSize',[pos1(3), pos1(4)]);
+
+print(ante_fig,'ex-ante-share-ratio','-dpng','-r0');
+
+post_fig = figure('Name', 'Ex-Post Sharpe Ratio');
+
+for i=1:NoMethods
+    plot(periods, sharpe_ratio_post{i})
+    hold on
+end
+
+legend(funNames, 'Location', 'eastoutside','FontSize',12);
+title('Ex-Post Sharpe Ratio', 'FontSize', 14)
+ylabel('Value','interpreter','latex','FontSize',12);
+xlabel('Investment Period','interpreter','latex','FontSize',12);
+
+% Define the plot size in inches
+set(post_fig,'Units','Inches', 'Position', [0 0 8, 5]);
+pos1 = get(post_fig,'Position');
+set(post_fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
+    'PaperSize',[pos1(3), pos1(4)]);
+
+print(post_fig,'ex-post-share-ratio','-dpng','-r0');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
