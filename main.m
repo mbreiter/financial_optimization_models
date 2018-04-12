@@ -222,15 +222,15 @@ for t = 1:NoPeriods
         if t ~= 1
             sharpe_ratio_post{i}(t-1,:) = (mu_portfolio_post*x{i}(:,t-1))/std_dev_post;
         end
-<<<<<<< HEAD
-        mu_portfolio_post = geomean(periodReturns+1)-1 
+        
+        mu_portfolio_post = geomean(periodReturns+1)-1
         
         % approximate var for each portfolio other than with cvar
         % optimization (since we already have that results)
-        if i ~= 5
+        if i ~= NoMethods
             % we take our loss function as what would be the reazlied gain
             % or loss under each scenario we generate
-            loss_function{i}(t,:) = -sim_returns' * x{i}(:,t);
+            loss_function{i}(t,:) = -(sim_returns') * x{i}(:,t);
             
             % find VaR for the portfolio given our monte carlo simulated results
             VaR{i}(t,:) = prctile(loss_function{i}(t,:), 100*confidence);
@@ -241,14 +241,11 @@ for t = 1:NoPeriods
             VaR{i}(t,:) = optimal_VaR(t);
             CVaR{i}(t,:) = optimal_CVaR(t); 
         end  
-=======
+        
         mu_portfolio_post = geomean(periodReturns+1)-1;
         covariance_post = cov(periodReturns);
-        std_dev_post = sqrt(x{i}(:,t)' * covariance_post * x{i}(:,t));
-        
->>>>>>> e3173f3df6c72cfe6e8b60d696c8e7cc306490e7
+        std_dev_post = sqrt(x{i}(:,t)' * covariance_post * x{i}(:,t));     
     end
-
     
     % complete our per period analysis calculations
     periodEndVal(t,:) = portfValue(toDay,:);
@@ -290,7 +287,7 @@ avgReturnsPeriod;
 [maxVal, when_max] = max(portfValue);
 clear max
 
-% minimum value of each portfolio and the realization date
+% minimum value of each portfolio and the realization datel
 [minVal, when_min] = min(portfValue);
 clear min
 
@@ -413,12 +410,9 @@ for i=1:NoMethods
     print(fig,file,'-dpng','-r0');
 end
 
-<<<<<<< HEAD
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-=======
-
 %--------------------------------------------------------------------------
-% 4.2 Plot the Sharpe Ratios 
+% 4.3 Plot the Sharpe Ratios 
 %--------------------------------------------------------------------------
 
 periods = 1:1:6;
@@ -462,4 +456,3 @@ set(post_fig,'PaperPositionMode','Auto','PaperUnits','Inches',...
 
 print(post_fig,'ex-post-sharpe-ratio','-dpng','-r0');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
->>>>>>> e3173f3df6c72cfe6e8b60d696c8e7cc306490e7
